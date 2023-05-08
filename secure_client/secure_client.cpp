@@ -63,9 +63,10 @@ void printBuffer(const char *header, char *buffer){
 	cout << "---" << endl;
 }
 
+unsigned long long repeatSquare(unsigned long long x, unsigned long long e, unsigned long long n);
 /////////////////////////////////////////////////////////////////////
 unsigned long long repeatSquare(unsigned long long x, unsigned long long e, unsigned long long n) {
-    int y = 1;
+    unsigned long long y = 1;
     while(e > 0) {
         if ((e % 2) == 0) {
             x = (x * x) % n;
@@ -78,17 +79,17 @@ unsigned long long repeatSquare(unsigned long long x, unsigned long long e, unsi
     return y;
 }
 
-int e = 529, d = 24305, N = 75301, p = 257, q = 293;
+//int e = 529, d = 24305, N = 75301, p = 257, q = 293;
 
 
 struct {
-    int e = 529;
-    int n = 75301;
+    unsigned long long e = 529;
+    unsigned long long n = 75301;
 } public_key;
 
 struct {
-    int d = 24305;
-    int n = 75301;
+    unsigned long long d = 24305;
+    unsigned long long n = 75301;
 } private_key;
 
 
@@ -374,7 +375,9 @@ hints.ai_protocol = IPPROTO_TCP;
 		//--------------------------------------------------------------------------------
 		
 	}
-	
+
+
+    char encrypted_message[BUFFER_SIZE];
 //*******************************************************************
 //Get input while user don't type "."
 //*******************************************************************
@@ -382,31 +385,49 @@ hints.ai_protocol = IPPROTO_TCP;
 	printf("you may now start sending commands to the <<<SERVER>>>\n");
 	printf("\nType here:");
 	memset(&send_buffer,0,BUFFER_SIZE);
+    //memset(&encrypted_message,0,BUFFER_SIZE);
     if(fgets(send_buffer,SEGMENT_SIZE,stdin) == NULL){
 		printf("error using fgets()\n");
 		exit(1);
 	}
 
-    char encrypted_message[strlen(send_buffer)];
+    int encrypted;
+    string temp_str;
+    char const* char_array = NULL;
+
 	//while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
 	while ((strncmp(send_buffer,".",1) != 0)) {
-		   send_buffer[strlen(send_buffer)-1]='\0';//strip '\n'
-		   
-	       strcat(send_buffer,"\r\n");
+
+        fill_n(encrypted_message, strlen(encrypted_message), 0);
+
+           for (int i = 0; i < strlen(send_buffer); i++) {
+               if (i == strlen(send_buffer)-1) {
+                   strcat(encrypted_message, "\0"); //strip '\n'
+                   break;
+               } else {
+                   encrypted = repeatSquare(send_buffer[i], public_key.e, public_key.n);
+                   temp_str = to_string(encrypted);
+                   char_array = temp_str.c_str();
+                   strcat(encrypted_message, char_array);
+                   strcat(encrypted_message, " ");
+               }
+           }
+
+        strcat(encrypted_message,"\r\n");
 	//*******************************************************************
 	//SEND
 	//*******************************************************************
 
-	       bytes = send(s, send_buffer, strlen(send_buffer),0);
-	       printf("\nMSG SENT <--: %s\n",send_buffer);//line sent 
-	       printf("Message length: %d \n",(int)strlen(send_buffer));
+	       bytes = send(s, encrypted_message, strlen(encrypted_message),0);
+               printf("\nMSG SENT <--: %s\n",encrypted_message);//line sent
+	       printf("Message length: %d \n",(int)strlen(encrypted_message));
 
 
 
            //******************************************************************************
            //TOKENISE INPUT
 
-        //repeatSquare(cipher, public_key.e, public_key.n); //encrypt
+        //repeatSquare(message, public_key.e, public_key.n); //encrypt
 
 
 
@@ -414,12 +435,12 @@ hints.ai_protocol = IPPROTO_TCP;
            char token[(int)strlen(send_buffer)];
            printf("message contents: ascii code, character equivalent\r\n");
            for (char x = 0; x < (int)strlen(send_buffer); x++){
-               token[x] = send_buffer[x] & 2;
+               token[x] = repeatSquare(send_buffer[x], public_key.e, public_key.n);
               printf("message[%d] = %d, %c\r\n", x, send_buffer[x], send_buffer[x]);
-              send_buffer[x] = 's';
-               bytes = send(s, send_buffer, strlen(send_buffer),0);
+              //send_buffer[x] = 's';
+              // bytes = send(s, token, strlen(send_buffer),0);
            }
-        memset(&send_buffer,0,BUFFER_SIZE);
+
 
            //******************************************************************************
 
