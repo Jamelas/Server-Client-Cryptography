@@ -14,6 +14,7 @@
 
 #define USE_IPV6 false
 #define DEFAULT_PORT "1234"
+#define K_BITS 8 //Message is encrypted in blocks of k bits
 
 #if defined __unix__ || defined __APPLE__
   #include <unistd.h>
@@ -82,17 +83,24 @@ unsigned long long int repeatSquare(unsigned long long int x, unsigned long long
 
 
 struct {
-    unsigned long long e = 529;
-    unsigned long long n = 75301;
+    unsigned long long int e = 529;
+    unsigned long long int n = 75301;
 } public_key;
 
 struct {
-    unsigned long long d = 24305;
-    unsigned long long n = 75301;
+    unsigned long long int d = 24305;
+    unsigned long long int n = 75301;
 } private_key;
 
 
-
+// Generate random k-bit number for Initialisation Vector
+int gen_rand_bytestream() {
+    int IV;
+    IV = rand() % (1 << K_BITS);
+        cout << "Stream is: " << IV << endl;  //DEBUG @@@@@@@@@@@@@@@@SDdfdgdfgsdgsdfgsgf <---------------------
+    cout << endl;
+    return IV;
+}
 
 
 /////////////////////////////////////////////////////////////////////
@@ -124,7 +132,7 @@ int main(int argc, char *argv[]) {
 
    char serverHost[NI_MAXHOST];
    char serverService[NI_MAXSERV];
-
+   srand(time(NULL)); //CHANGE TO TIME?
    //memset(&sin, 0, sizeof(sin));
 
 #if defined __unix__ || defined __APPLE__
@@ -377,6 +385,7 @@ hints.ai_protocol = IPPROTO_TCP;
 
 
     char encrypted_message[BUFFER_SIZE];
+    char temp_message[BUFFER_SIZE];
 //*******************************************************************
 //Get input while user don't type "."
 //*******************************************************************
@@ -392,7 +401,9 @@ hints.ai_protocol = IPPROTO_TCP;
 
     int encrypted;
     string temp_str;
-    char const* char_array = NULL;
+    const char *char_array = NULL;
+    int IV = gen_rand_bytestream();
+    cout << "The value of IV is: " << IV << endl;
 
 	//while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
 	while ((strncmp(send_buffer,".",1) != 0)) {
