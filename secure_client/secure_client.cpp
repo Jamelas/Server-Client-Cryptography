@@ -94,7 +94,7 @@ struct {
 
 
 // Generate random k-bit number for Initialisation Vector
-int gen_rand_bytestream() {
+int generate_IV() {
     int IV;
     IV = rand() % (1 << K_BITS);
         cout << "Stream is: " << IV << endl;  //DEBUG @@@@@@@@@@@@@@@@SDdfdgdfgsdgsdfgsgf <---------------------
@@ -402,7 +402,7 @@ hints.ai_protocol = IPPROTO_TCP;
     int encrypted;
     string temp_str;
     const char *char_array = NULL;
-    int IV = gen_rand_bytestream();
+    int IV = generate_IV();
     cout << "The value of IV is: " << IV << endl;
 
 	//while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
