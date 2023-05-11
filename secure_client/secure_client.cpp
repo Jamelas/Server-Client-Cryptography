@@ -97,8 +97,6 @@ struct {
 int generate_IV() {
     int IV;
     IV = rand() % (1 << K_BITS);
-        cout << "Stream is: " << IV << endl;  //DEBUG @@@@@@@@@@@@@@@@SDdfdgdfgsdgsdfgsgf <---------------------
-    cout << endl;
     return IV;
 }
 
@@ -114,7 +112,7 @@ int main(int argc, char *argv[]) {
 
 
 
-   char portNum[12];
+char portNum[12];
 
 #if defined __unix__ || defined __APPLE__
    int s;
@@ -278,25 +276,11 @@ hints.ai_protocol = IPPROTO_TCP;
   	}
 #endif
 
-   //sin.sin_family = AF_INET;
-//~ //*******************************************************************
-//~ //GETHOSTBYNAME
-//~ //*******************************************************************
-   //~ if ((h=gethostbyname(argv[1])) != NULL) {
-      //~ memcpy(&sin.sin_addr,h->h_addr,h->h_length); //get remote IP address
-   //~ } else if ((sin.sin_addr.s_addr = inet_addr(argv[1])) == INADDR_NONE) {
-      //~ printf("An error occured when trying to translate to IP address\n");
-		//~ WSACleanup();
-   	//~ exit(1);
-   //~ }
+
 //*******************************************************************
 //CONNECT
 //*******************************************************************
-   //~ if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) != 0) {
-      //~ printf("connect failed\n");
-		//~ WSACleanup();
-   	//~ exit(1);
-   //~ }
+
 
 	 if (connect(s, result->ai_addr, result->ai_addrlen) != 0) {
         printf("\nconnect failed\n");
@@ -306,23 +290,10 @@ hints.ai_protocol = IPPROTO_TCP;
 #endif
    	    exit(1);
       } else {
-		//~ printf("connected to server.\n");
-		//~ struct sockaddr_in sa;
-        //~ char ipstr[INET_ADDRSTRLEN];
-
-		// store this IP address in sa:
-        //inet_pton(AF_INET, result->ai_addr, &(sa.sin_addr));
-
-		//-----------------------------------
-		//~ void *addr;
 		char ipver[80];
 
-		// Get the pointer to the address itself, different fields in IPv4 and IPv6
 		if (result->ai_family == AF_INET)
 		{
-			// IPv4
-			//~ struct sockaddr_in *ipv4 = (struct sockaddr_in *)result->ai_addr;
-			//~ addr = &(ipv4->sin_addr);
 			strcpy(ipver,"IPv4");
 		}
 		else if(result->ai_family == AF_INET6)
@@ -403,7 +374,7 @@ hints.ai_protocol = IPPROTO_TCP;
     string temp_str;
     const char *char_array = NULL;
     int IV = generate_IV();
-    cout << "The value of IV is: " << IV << endl;
+
 
 	//while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
 	while ((strncmp(send_buffer,".",1) != 0)) {
