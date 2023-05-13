@@ -130,7 +130,7 @@ char portNum[12];
 
    char serverHost[NI_MAXHOST];
    char serverService[NI_MAXSERV];
-   srand(time(NULL)); //CHANGE TO TIME?
+   srand(time(NULL));
    //memset(&sin, 0, sizeof(sin));
 
 #if defined __unix__ || defined __APPLE__
