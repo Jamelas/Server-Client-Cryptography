@@ -67,11 +67,11 @@ void initialise_kbit_table() {
                 j = 0;
             }
         }
-        kbit_exchange.input[output[i]] = (unsigned char)i;
-        cout << "input " << i << " is: "<< (unsigned int)kbit_exchange.input[i] << endl;
+        kbit_exchange.input[i] = (char)i;
+        //cout << "input " << i << " is: "<< (unsigned int)kbit_exchange.input[i] << endl;
         kbit_exchange.output[i] = output[i];
-        cout << "output " << i << " is: "<< (unsigned int)kbit_exchange.output[i] << endl;
-        cout << endl;
+        //cout << "output " << i << " is: "<< (unsigned int)kbit_exchange.output[i] << endl;
+        //cout << endl;
         i++;
     }
 }
@@ -140,8 +140,9 @@ int main() {
                 encrypted = IV;
             }
             else {
-                encrypted = c[i] ^ send_buffer[i];
-                encrypted = kbit_exchange.output[encrypted];
+                //encrypted = c[i] ^ send_buffer[i];
+                encrypted = encrypted ^ send_buffer[i];
+                //encrypted = kbit_exchange.output[encrypted];
 
             }
             encrypted = repeatSquare(encrypted, public_key.e, public_key.n);
@@ -149,7 +150,7 @@ int main() {
             char_array = temp_str.c_str();
             strcat(encrypted_message, char_array);
             strcat(encrypted_message, " ");
-            c[i+1] = encrypted;
+            //c[i+1] = encrypted;
         }
     }
 //////////////////////////////////////////////////////////////////////////
@@ -193,52 +194,62 @@ int main() {
     int decrypted[3];
     bool is_IV = true;
     char hold[200];
-    fill_n(hold, strlen(message), 0);
+    fill_n(hold, sizeof(message), 0);
 
     for (int i = 0; i < strlen(encrypted_message); i++) {
+        fill_n(hold, strlen(hold), 0);
+
+
         if (i == strlen(encrypted_message)) {
             strcat(message, "\0"); //strip '\n'
             break;
         }
-        while (is_IV) {
+        if (is_IV) {
             while (encrypted_message[i] != ' ') {
                 hold[i] = encrypted_message[i];
                 i++;
             }
             //cout << "hold is: "<< hold << endl;
             decrypted[0] = repeatSquare(stoi(hold), private_key.d, private_key.n);
-            //cout << "Before DEBUG: " << decrypted[0] << endl;
-            i++;
+            cout << "decrypted[0] after rsa decryption is: " << decrypted[0] << endl;
+            //i++;
             is_IV = false;
         }
 
+        else {
 
-        int j = 0;
-        fill_n(hold, strlen(hold), 0);
+            int j = 0;
+            while (encrypted_message[i] != ' ') {
+                hold[j] = encrypted_message[i];
+                i++;
+                j++;
+            }
 
-        while (encrypted_message[i] != ' ') {
-            hold[j] = encrypted_message[i];
-            i++;
-            j++;
+            cout << "hold is: "<< hold << endl;
+
+
+
+            //fill_n(hold, strlen(message), 0);
+            //decrypted[0] = repeatSquare(decrypted[0], private_key.d, private_key.n);
+
+            decrypted[1] = repeatSquare((int)stoi(hold), private_key.d, private_key.n);
+
+            decrypted[0] = decrypted[1] ^ decrypted[0];
+            cout << "decrypted[0] after rsa decryption is: " << decrypted[0] << endl;
+            cout << "decrypted[1] after rsa decryption is: " << decrypted[1] << endl;
+
+
+            //decrypted[2] = kbit_exchange.output[decrypted[1]] ^ decrypted[0];
+            //cout << "DECRYPTION 2: " << decrypted[2] <<  endl;
+
+            temp_str = to_string(decrypted[0]);
+            char_array = temp_str.c_str();
+            strcat(message, char_array);
+            //decrypted[0] = stoi(hold);
         }
-        cout << "hold is: "<< hold << endl;
 
 
 
-        //fill_n(hold, strlen(message), 0);
-        //decrypted[0] = repeatSquare(decrypted[0], private_key.d, private_key.n);
-        cout << "decrypted[0] after rsa decryption is: " << decrypted[0] << endl;
-        decrypted[1] = repeatSquare(stoi(hold), private_key.d, private_key.n);
-        cout << "decrypted after rsa decryption is: " << decrypted[1] << endl;
-
-
-        decrypted[2] = kbit_exchange.output[decrypted[1]] ^ decrypted[0];
-        cout << "DECRYPTION 2: " << decrypted[2] <<  endl;
-
-        temp_str = to_string(decrypted[2]);
-        char_array = temp_str.c_str();
-        strcat(message, char_array);
-        decrypted[0] = stoi(hold);
 
 
     }
