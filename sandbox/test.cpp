@@ -112,37 +112,38 @@ int main() {
     const char *char_array = NULL;
 
 
-    /*
+
     send_buffer[0] = 'h';
     send_buffer[1] = 'e';
     send_buffer[2] = 'l';
     send_buffer[3] = 'l';
     send_buffer[4] = 'o';
     send_buffer[5] = '!';
-     */
+     /*
     send_buffer[0] = 'A';
     send_buffer[1] = 'A';
     send_buffer[2] = 'A';
-
+    send_buffer[3] = '\n';
+*/
     int IV = generate_IV();
-    char c[200];
-    c[0] = IV;
-    //encrypted = IV ^ send_buffer[0];
-    //cout << "ciphered[0] is: " << (int)ciphered[0] << endl;
+    //char c[200];
+    //c[0] = IV;
+
+
 /////////////////////////////////////////////////////////////////////
     //RSA ENCRYPT
     for (int i = 0; i <= strlen(send_buffer); i++) {
-        if (i > strlen(send_buffer)) {
+        if (i == strlen(send_buffer)) {
             strcat(encrypted_message, "\0"); //strip '\n'
             break;
         } else {
             if (i == 0) {
                 encrypted = IV;
+                //encrypted = 230;
             }
             else {
-                //encrypted = c[i] ^ send_buffer[i];
-                encrypted = encrypted ^ send_buffer[i];
-                //encrypted = kbit_exchange.output[encrypted];
+                cout << send_buffer[i] << endl;
+                encrypted = encrypted ^ send_buffer[i-1];
 
             }
             encrypted = repeatSquare(encrypted, public_key.e, public_key.n);
@@ -150,7 +151,6 @@ int main() {
             char_array = temp_str.c_str();
             strcat(encrypted_message, char_array);
             strcat(encrypted_message, " ");
-            //c[i+1] = encrypted;
         }
     }
 //////////////////////////////////////////////////////////////////////////
@@ -192,6 +192,7 @@ int main() {
     fill_n(message, strlen(message), 0);
 
     int decrypted[3];
+    int cipher;
     bool is_IV = true;
     char hold[200];
     fill_n(hold, sizeof(message), 0);
@@ -210,8 +211,10 @@ int main() {
                 i++;
             }
             //cout << "hold is: "<< hold << endl;
+            cout << "IV before decryption is: " << hold << endl;
+            cipher = stoi(hold);
             decrypted[0] = repeatSquare(stoi(hold), private_key.d, private_key.n);
-            cout << "decrypted[0] after rsa decryption is: " << decrypted[0] << endl;
+            cout << "IV after rsa decryption is: " << decrypted[0] << endl << endl;
             //i++;
             is_IV = false;
         }
@@ -231,13 +234,15 @@ int main() {
 
             //fill_n(hold, strlen(message), 0);
             //decrypted[0] = repeatSquare(decrypted[0], private_key.d, private_key.n);
+            //cout << "cipher before decryption is: " << hold << endl;
+            decrypted[1] = repeatSquare(stoi(hold), private_key.d, private_key.n);
+            //cout << "cipher after rsa decryption is: " << decrypted[1] << endl << endl;
 
-            decrypted[1] = repeatSquare((int)stoi(hold), private_key.d, private_key.n);
 
-            decrypted[0] = decrypted[1] ^ decrypted[0];
-            cout << "decrypted[0] after rsa decryption is: " << decrypted[0] << endl;
-            cout << "decrypted[1] after rsa decryption is: " << decrypted[1] << endl;
-
+            decrypted[0] = decrypted[1] ^ cipher;
+            //cout << "decrypted[0] after rsa decryption is: " << decrypted[0] << endl;
+            //cout << "decrypted[1] after rsa decryption is: " << decrypted[1] << endl;
+            cipher = stoi(hold);
 
             //decrypted[2] = kbit_exchange.output[decrypted[1]] ^ decrypted[0];
             //cout << "DECRYPTION 2: " << decrypted[2] <<  endl;
@@ -245,6 +250,7 @@ int main() {
             temp_str = to_string(decrypted[0]);
             char_array = temp_str.c_str();
             strcat(message, char_array);
+            strcat(message, " ");
             //decrypted[0] = stoi(hold);
         }
 
