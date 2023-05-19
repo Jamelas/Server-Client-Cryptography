@@ -39,7 +39,7 @@
 #define DEFAULT_PORT "1234" 
 
 #define BUFFER_SIZE 500
-#define RBUFFER_SIZE 256
+#define RBUFFER_SIZE 500
 
 using namespace std;
 
@@ -62,9 +62,9 @@ void printBuffer(const char *header, char *buffer){
 
 /////////////////////////////////////////////////////////////////////
 
-// decrypt
-unsigned long long repeatSquare(unsigned long long x, unsigned long long e, unsigned long long n) {
-    int y = 1;
+// Encrypt message/decrypt cipher
+unsigned long long int repeatSquare(unsigned long long int x, unsigned long long int e, unsigned long long int n) {
+    unsigned long long int y = 1;
     while(e > 0) {
         if ((e % 2) == 0) {
             x = (x * x) % n;
@@ -80,17 +80,15 @@ unsigned long long repeatSquare(unsigned long long x, unsigned long long e, unsi
 
 
 
-int e = 529, d = 24305, N = 75301, p = 257, q = 293;
-
-
 struct {
-    int e = 529;
-    int n = 75301;
+    unsigned long long int e = 529;
+    unsigned long long int n = 75301;
 } public_key;
 
+
 struct {
-    int d = 24305;
-    int n = 75301;
+    unsigned long long int d = 24305;
+    unsigned long long int n = 75301;
 } private_key;
 
 
@@ -118,6 +116,8 @@ int main(int argc, char *argv[]) {
 	char portNum[NI_MAXSERV];
 	// char username[80];
 	// char passwd[80];
+    string temp_str;
+    const char *char_array = NULL;
 		
    //memset(&localaddr,0,sizeof(localaddr));
 
@@ -422,10 +422,61 @@ while (1) {  //main loop
 //********************************************************************			
          printf("MSG RECEIVED <--: %s\n",receive_buffer);
          //printBuffer("RECEIVE_BUFFER", receive_buffer);
-			
+
+          int decrypted;
+          int cipher;
+          bool is_IV = true;
+          char decrypted_message[BUFFER_SIZE];
+          fill_n(decrypted_message, strlen(decrypted_message), 0);
+          char hold[BUFFER_SIZE];
+          for (int i = 0; i < strlen(receive_buffer); i++) {
+              fill_n(hold, strlen(hold), 0);
+
+
+              if (i == strlen(receive_buffer)) {
+                  strcat(decrypted_message, "\0"); //strip '\n'
+                  break;
+              }
+
+              //Find IV value.
+              if (is_IV) {
+                  while (receive_buffer[i] != ' ') {
+                      hold[i] = receive_buffer[i];
+                      i++;
+                  }
+
+                  cipher = stoll(hold);
+                  is_IV = false;
+              }
+
+              else {
+                  // extract the next character from the buffer
+                  int j = 0;
+                  while (receive_buffer[i] != ' ') {
+                      hold[j] = receive_buffer[i];
+                      i++;
+                      j++;
+                  }
+
+                  decrypted = (repeatSquare(stoll(hold), private_key.d, private_key.n)) ^ cipher;
+                  cipher = stoll(hold);
+
+
+                  temp_str = char(decrypted);
+                  char_array = temp_str.c_str();
+                  strcat(decrypted_message, char_array);
+              }
+          }
+          printf("The encrypted message is: %s\r\n", decrypted_message);
 //********************************************************************
 //SEND
-//********************************************************************         
+//********************************************************************
+          //char receive_buffer[500];
+          //fill_n(receive_buffer, strlen(receive_buffer), 0);
+
+
+
+
 		 bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 		 printf("MSG SENT --> %s\n",send_buffer);
 		 //printBuffer("SEND_BUFFER", send_buffer);
