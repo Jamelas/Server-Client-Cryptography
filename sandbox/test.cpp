@@ -1,17 +1,13 @@
-#define USE_IPV6 false
-#define DEFAULT_PORT "1234"
 #define K_BITS 256 //Message is encrypted in blocks of k bits
 
 #include <winsock2.h>
-#include <ws2tcpip.h> //required by getaddrinfo() and special constants
 #include <stdlib.h>
-#include <stdio.h>
-#include <cstdio>
 #include <iostream>
 
 using namespace std;
 
 
+// Encrypt message/decrypt cipher
 unsigned long long int repeatSquare(unsigned long long int x, unsigned long long int e, unsigned long long int n) {
     unsigned long long int y = 1;
     while(e > 0) {
@@ -33,6 +29,7 @@ struct {
     unsigned long long int n = 75301;
 } public_key;
 
+
 struct {
     unsigned long long int d = 24305;
     unsigned long long int n = 75301;
@@ -48,66 +45,18 @@ int generate_IV() {
 }
 
 
-struct {
-    unsigned char input[K_BITS];
-    unsigned char output[K_BITS];
-} kbit_exchange;
-
-//populate the kbit table
-void initialise_kbit_table() {
-    unsigned char output[K_BITS];
-    int i = 0;
-    while (i < K_BITS) {
-        output[i] = rand();
-        for (int j = 0; j < i; j++) {
-            if (i == 0) break;
-            if (output[j] == output[i]) {
-                //cout << "DUPLICATE FOUND" << endl;
-                output[i] = rand();
-                j = 0;
-            }
-        }
-        kbit_exchange.input[i] = (char)i;
-        //cout << "input " << i << " is: "<< (unsigned int)kbit_exchange.input[i] << endl;
-        kbit_exchange.output[i] = output[i];
-        //cout << "output " << i << " is: "<< (unsigned int)kbit_exchange.output[i] << endl;
-        //cout << endl;
-        i++;
-    }
-}
-
-
-
-void create_cipher_text(int IV, char encrypted_message[200]) {
-    unsigned char ciphered_message[200];
-    const unsigned char *str = NULL;
-    ciphered_message[0] = (unsigned char) IV;
-    int i = 0;
-    while (i < strlen(encrypted_message)) {
-        ciphered_message[i + 1] = encrypted_message[i] ^ ciphered_message[i];
-        //strcat(ciphered_message, to_string(ciphered_message[i + 1]));
-
-        i++;
-        ciphered_message[i + 1] = kbit_exchange.output[(int) ciphered_message[i]];
-    }
-//strcat(str, ciphered_message);
-   // return str;
-}
-
-
 int main() {
 
     srand(time(NULL));
 
-    char send_buffer[200];
+    char send_buffer[500];
     fill_n(send_buffer, strlen(send_buffer), 0);
 
-    char encrypted_message[200];
+    char encrypted_message[500];
     fill_n(encrypted_message, strlen(encrypted_message), 0);
 
-    initialise_kbit_table();
 
-    int encrypted;
+    int encrypt;
     string temp_str;
     const char *char_array = NULL;
 
@@ -119,108 +68,77 @@ int main() {
     send_buffer[3] = 'l';
     send_buffer[4] = 'o';
     send_buffer[5] = '!';
-     /*
-    send_buffer[0] = 'A';
-    send_buffer[1] = 'A';
-    send_buffer[2] = 'A';
-    send_buffer[3] = '\n';
-*/
-    int IV = generate_IV();
-    //char c[200];
-    //c[0] = IV;
+    send_buffer[6] = '\n';
 
 
-/////////////////////////////////////////////////////////////////////
-    //RSA ENCRYPT
+
+
+
+///////////////////////////  INPUT  ///////////////////////////
+
+
     for (int i = 0; i <= strlen(send_buffer); i++) {
         if (i == strlen(send_buffer)) {
             strcat(encrypted_message, "\0"); //strip '\n'
             break;
         } else {
             if (i == 0) {
-                encrypted = IV;
-                //encrypted = 230;
+                encrypt = generate_IV();
             }
             else {
-                cout << send_buffer[i] << endl;
-                encrypted = encrypted ^ send_buffer[i-1];
-
+                encrypt = encrypt ^ send_buffer[i-1];
             }
-            encrypted = repeatSquare(encrypted, public_key.e, public_key.n);
-            temp_str = to_string(encrypted);
+
+            encrypt = repeatSquare(encrypt, public_key.e, public_key.n);
+            temp_str = to_string(encrypt);
             char_array = temp_str.c_str();
             strcat(encrypted_message, char_array);
             strcat(encrypted_message, " ");
         }
     }
-//////////////////////////////////////////////////////////////////////////
 
-
-// 1. Generate random k-bit number and store as IV (c0)
-
-
-// 2. Calculate the ciphertext (message xor c0)
-
-
-// 3. Calculate remaining ciphertext for block i (c(i) = m(i) xor c(i-1))
-
-
-    cout << "Original message: " << send_buffer << endl;
+    cout << "Original message: " << send_buffer;
     cout << "Encrypted message: " << encrypted_message << endl;
-    cout << "The value of IV is: " << IV << endl;
-    cout << endl << endl;
-
-/*
-    // Split each character into 4-bit blocks
-    for (int i = 0; i < strlen(encrypted_message); i++) {
-        unsigned char c = encrypted_message[i];
-
-        if (c == ' ') continue;
-        int block1 = (c >> 4) & 0x0F; // get the first 4 bits
-        int block2 = c & 0x0F; // get the last 4 bits
-
-        cout << "Character " << c << " is split into blocks " << block1 << " and " << block2 << std::endl;
-    }
-*/
+///////////////////////////////////////////////////////////////
 
 
 
 
-    //cout << "New ciphered text is: " << create_cipher_text(IV, encrypted_message);
 
-    char message[200];
-    fill_n(message, strlen(message), 0);
+///////////////////////////  OUTPUT  //////////////////////////
+    char receive_buffer[500];
+    fill_n(receive_buffer, strlen(receive_buffer), 0);
 
-    int decrypted[3];
+    int decrypted;
     int cipher;
     bool is_IV = true;
-    char hold[200];
-    fill_n(hold, sizeof(message), 0);
+
+    char hold[500];
+
 
     for (int i = 0; i < strlen(encrypted_message); i++) {
         fill_n(hold, strlen(hold), 0);
 
 
         if (i == strlen(encrypted_message)) {
-            strcat(message, "\0"); //strip '\n'
+            strcat(receive_buffer, "\0"); //strip '\n'
             break;
         }
+
+        //Find IV value.
         if (is_IV) {
             while (encrypted_message[i] != ' ') {
                 hold[i] = encrypted_message[i];
                 i++;
             }
-            //cout << "hold is: "<< hold << endl;
-            cout << "IV before decryption is: " << hold << endl;
+
             cipher = stoi(hold);
-            decrypted[0] = repeatSquare(stoi(hold), private_key.d, private_key.n);
-            cout << "IV after rsa decryption is: " << decrypted[0] << endl << endl;
-            //i++;
+            decrypted = repeatSquare(stoi(hold), private_key.d, private_key.n);
             is_IV = false;
         }
 
         else {
-
+            // extract the next character from the buffer
             int j = 0;
             while (encrypted_message[i] != ' ') {
                 hold[j] = encrypted_message[i];
@@ -228,39 +146,19 @@ int main() {
                 j++;
             }
 
-            cout << "hold is: "<< hold << endl;
-
-
-
-            //fill_n(hold, strlen(message), 0);
-            //decrypted[0] = repeatSquare(decrypted[0], private_key.d, private_key.n);
-            //cout << "cipher before decryption is: " << hold << endl;
-            decrypted[1] = repeatSquare(stoi(hold), private_key.d, private_key.n);
-            //cout << "cipher after rsa decryption is: " << decrypted[1] << endl << endl;
-
-
-            decrypted[0] = decrypted[1] ^ cipher;
-            //cout << "decrypted[0] after rsa decryption is: " << decrypted[0] << endl;
-            //cout << "decrypted[1] after rsa decryption is: " << decrypted[1] << endl;
+            decrypted = (repeatSquare(stoi(hold), private_key.d, private_key.n)) ^ cipher;
             cipher = stoi(hold);
 
-            //decrypted[2] = kbit_exchange.output[decrypted[1]] ^ decrypted[0];
-            //cout << "DECRYPTION 2: " << decrypted[2] <<  endl;
 
-            temp_str = to_string(decrypted[0]);
+            temp_str = char(decrypted);
             char_array = temp_str.c_str();
-            strcat(message, char_array);
-            strcat(message, " ");
-            //decrypted[0] = stoi(hold);
+            strcat(receive_buffer, char_array);
         }
 
-
-
-
-
     }
+    ///////////////////////////////////////////////////////////////
 
-    cout << "Message after decryption is: " << message << endl;
+
+    cout << "Message after decryption is: " << receive_buffer << endl;
 
 }
-
