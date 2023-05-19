@@ -14,7 +14,6 @@
 
 #define USE_IPV6 false
 #define DEFAULT_PORT "1234"
-#define K_BITS 8 //Message is encrypted in blocks of k bits
 
 #if defined __unix__ || defined __APPLE__
   #include <unistd.h>
@@ -66,6 +65,7 @@ void printBuffer(const char *header, char *buffer){
 
 
 /////////////////////////////////////////////////////////////////////
+// Encrypt message/decrypt cipher
 unsigned long long int repeatSquare(unsigned long long int x, unsigned long long int e, unsigned long long int n) {
     unsigned long long int y = 1;
     while(e > 0) {
@@ -96,7 +96,7 @@ struct {
 // Generate random k-bit number for Initialisation Vector
 int generate_IV() {
     int IV;
-    IV = rand() % (1 << K_BITS);
+    IV = rand() % 256;
     return IV;
 }
 
@@ -104,13 +104,6 @@ int generate_IV() {
 /////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
-//*******************************************************************
-// Initialization
-// What are the important data structures?
-//*******************************************************************
-
-
-
 
 char portNum[12];
 
@@ -120,7 +113,7 @@ char portNum[12];
    SOCKET s;
 #endif
 
-#define BUFFER_SIZE 200
+#define BUFFER_SIZE 500
 //remember that the BUFFESIZE has to be at least big enough to receive the answer from the server
 #define SEGMENT_SIZE 70
 //segment size, i.e., if fgets gets more than this number of bytes it segments the message
@@ -131,7 +124,7 @@ char portNum[12];
    char serverHost[NI_MAXHOST];
    char serverService[NI_MAXSERV];
    srand(time(NULL));
-   //memset(&sin, 0, sizeof(sin));
+
 
 #if defined __unix__ || defined __APPLE__
    //nothing to do here
@@ -179,14 +172,11 @@ if(USE_IPV6){
     printf("\n\n<<<TCP (CROSS-PLATFORM, IPv6-ready) CLIENT, by nhreyes>>>\n");
 
     if (LOBYTE(wsadata.wVersion) != 2 || HIBYTE(wsadata.wVersion) != 2) {
-        /* Tell the user that we could not find a usable */
-        /* WinSock DLL.                                  */
         printf("Could not find a usable version of Winsock.dll\n");
         WSACleanup();
         exit(1);
     }
     else{
-
         printf("\nThe Winsock 2.2 dll was initialised.\n");
     }
 
@@ -201,8 +191,6 @@ struct addrinfo *result = NULL;
 struct addrinfo hints;
 int iResult;
 
-
-//ZeroMemory(&hints, sizeof (hints)); //alternatively, for Windows only
 memset(&hints, 0, sizeof(struct addrinfo));
 
 
@@ -216,23 +204,19 @@ if(USE_IPV6){
 
 hints.ai_socktype = SOCK_STREAM;
 hints.ai_protocol = IPPROTO_TCP;
-//hints.ai_flags = AI_PASSIVE;// PASSIVE is only for a SERVER
+
+
 
 //*******************************************************************
 //	Dealing with user's arguments
 //*******************************************************************
 
-
-
 	//if there are 3 parameters passed to the argv[] array.
    if (argc == 3){
-		//sin.sin_port = htons((u_short)atoi(argv[2])); //get Remote Port number
 	    sprintf(portNum,"%s", argv[2]);
 	    printf("\nUsing port: %s \n", portNum);
 	    iResult = getaddrinfo(argv[1], portNum, &hints, &result);
-	   //iResult = getaddrinfo("0:0:0:0:0:0:0:1", portNum, &hints, &result); //works! test only!
 	} else {
-		//sin.sin_port = htons(1234); //use default port number
 	    printf("USAGE: Client IP-address [port]\n"); //missing IP address
 		sprintf(portNum,"%s", DEFAULT_PORT);
 		printf("Default portNum = %s\n",portNum);
@@ -248,6 +232,7 @@ hints.ai_protocol = IPPROTO_TCP;
 		 return 1;
    }
 
+
 //*******************************************************************
 //CREATE CLIENT'S SOCKET
 //*******************************************************************
@@ -258,7 +243,6 @@ hints.ai_protocol = IPPROTO_TCP;
  	s = INVALID_SOCKET;
 #endif
 
-	//s = socket(PF_INET, SOCK_STREAM, 0);
 	s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 
 #if defined __unix__ || defined __APPLE__
@@ -298,17 +282,9 @@ hints.ai_protocol = IPPROTO_TCP;
 		}
 		else if(result->ai_family == AF_INET6)
 		{
-			// IPv6
-			//~ struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)result->ai_addr;
-			//~ addr = &(ipv6->sin6_addr);
 			strcpy(ipver,"IPv6");
 		}
 
-		// printf("\nConnected to <<<SERVER>>> with IP address: %s, %s at port: %s\n", argv[1], ipver,portNum);
-
-		//--------------------------------------------------------------------------------
-	   //getnameinfo() can be used to extract the IP address of the SERVER, in case a hostname was
-		//              supplied by the user instead.
 
 #if defined __unix__ || defined __APPLE__
        int returnValue;
@@ -319,23 +295,9 @@ hints.ai_protocol = IPPROTO_TCP;
 		memset(serverHost, 0, sizeof(serverHost));
 	    memset(serverService, 0, sizeof(serverService));
 
-        //int addrlen = sizeof (struct sockaddr);
-        // int addrlen = sizeof (*(result->ai_addr));
-
         returnValue=getnameinfo((struct sockaddr *)result->ai_addr, /*addrlen*/ result->ai_addrlen,
                serverHost, sizeof(serverHost),
                serverService, sizeof(serverService), NI_NUMERICHOST);
-
-		// returnValue=getnameinfo((struct sockaddr *)result->ai_addr, /* sizeof(*(result->ai_addr)) */&addrlen,
-  //              serverHost, sizeof(serverHost),
-  //              serverService, sizeof(serverService),
-	 //            NI_NUMERICHOST);
-
-
-		//~ getnameinfo(result->ai_addr, sizeof(*(result->ai_addr)),
-               //~ serverHost, sizeof(serverHost),
-               //~ serverService, sizeof(serverService),
-	            //~ NI_NAMEREQD); //works only if the DNS can resolve the hostname; otherwise, will result in an error
 
 		if(returnValue != 0){
 
@@ -348,15 +310,12 @@ hints.ai_protocol = IPPROTO_TCP;
 
 	    } else{
 		   printf("\nConnected to <<<SERVER>>> extracted IP address: %s, %s at port: %s\n", serverHost, ipver,/* serverService */ portNum);  //serverService is nfa
-	    	//printf("\nConnected to <<<SERVER>>> extracted IP address: %s, at port: %s\n", serverHost, serverService);
 	    }
-		//--------------------------------------------------------------------------------
-
 	}
 
 
-    char encrypted_message[BUFFER_SIZE];
-    char temp_message[BUFFER_SIZE];
+
+
 //*******************************************************************
 //Get input while user don't type "."
 //*******************************************************************
@@ -364,16 +323,15 @@ hints.ai_protocol = IPPROTO_TCP;
 	printf("you may now start sending commands to the <<<SERVER>>>\n");
 	printf("\nType here:");
 	memset(&send_buffer,0,BUFFER_SIZE);
-    //memset(&encrypted_message,0,BUFFER_SIZE);
     if(fgets(send_buffer,SEGMENT_SIZE,stdin) == NULL){
 		printf("error using fgets()\n");
 		exit(1);
 	}
 
-    int encrypted;
+    char encrypted_message[BUFFER_SIZE];
     string temp_str;
     const char *char_array = NULL;
-    int IV = generate_IV();
+    int encrypt;
 
 
 	//while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
@@ -382,53 +340,32 @@ hints.ai_protocol = IPPROTO_TCP;
         fill_n(encrypted_message, strlen(encrypted_message), 0);
 
            for (int i = 0; i < strlen(send_buffer); i++) {
-               if (i == strlen(send_buffer)-1) {
-                   strcat(encrypted_message, "\0"); //strip '\n'
-                   break;
-               } else {
-                   encrypted = repeatSquare(send_buffer[i], public_key.e, public_key.n);
-                   temp_str = to_string(encrypted);
+                   if (i == 0) {
+                       encrypt = generate_IV();
+                   }
+                   else {
+                       encrypt = encrypt ^ send_buffer[i-1];
+                   }
+
+                   encrypt = repeatSquare(encrypt, public_key.e, public_key.n);
+                   temp_str = to_string(encrypt);
                    char_array = temp_str.c_str();
                    strcat(encrypted_message, char_array);
                    strcat(encrypted_message, " ");
-               }
            }
-
+        strcat(encrypted_message, "\0"); //strip '\n'
         strcat(encrypted_message,"\r\n");
+
+
 	//*******************************************************************
 	//SEND
 	//*******************************************************************
 
 	       bytes = send(s, encrypted_message, strlen(encrypted_message),0);
-               printf("\nMSG SENT <--: %s\n",encrypted_message);//line sent
+           printf("\nMSG SENT <--: %s\n",encrypted_message);//line sent
 	       printf("Message length: %d \n",(int)strlen(encrypted_message));
 
 
-
-           //******************************************************************************
-           //TOKENISE INPUT
-
-        //repeatSquare(message, public_key.e, public_key.n); //encrypt
-
-
-
-
-           char token[(int)strlen(send_buffer)];
-           printf("message contents: ascii code, character equivalent\r\n");
-           for (char x = 0; x < (int)strlen(send_buffer); x++){
-               token[x] = repeatSquare(send_buffer[x], public_key.e, public_key.n);
-              printf("message[%d] = %d, %c\r\n", x, send_buffer[x], send_buffer[x]);
-              //send_buffer[x] = 's';
-              // bytes = send(s, token, strlen(send_buffer),0);
-           }
-
-
-           //******************************************************************************
-
-           //******************************************************************************
-           //ENCRYPT MESSAGE
-
-           //******************************************************************************
 
 #if defined __unix__ || defined __APPLE__
           if (bytes == -1) {
@@ -442,6 +379,7 @@ hints.ai_protocol = IPPROTO_TCP;
 	      	 exit(1);
 	      }
 #endif
+
 
 	      n = 0;
 	      while (1) {
@@ -471,9 +409,7 @@ hints.ai_protocol = IPPROTO_TCP;
 	         if (receive_buffer[n] != '\r') n++;   /*ignore CR's*/
 	      }
 
-	      // printBuffer("RECEIVE_BUFFER", receive_buffer);
 	      printf("MSG RECEIVED --> %s\n",receive_buffer);
-	      // printf("<<<SERVER's Reply>>>:%s\n",receive_buffer);
 
 			//get another user input
 	      memset(&send_buffer, 0, BUFFER_SIZE);
