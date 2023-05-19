@@ -40,7 +40,7 @@ struct {
 // Generate random k-bit number for Initialisation Vector
 int generate_IV() {
     int IV;
-    IV = rand() % K_BITS;
+    IV = rand() % 256;
     return IV;
 }
 
@@ -77,7 +77,7 @@ int main() {
 ///////////////////////////  INPUT  ///////////////////////////
 
 
-    for (int i = 0; i <= strlen(send_buffer); i++) {
+    for (int i = 0; i < strlen(send_buffer); i++) {
         if (i == strlen(send_buffer)) {
             strcat(encrypted_message, "\0"); //strip '\n'
             break;
@@ -132,8 +132,7 @@ int main() {
                 i++;
             }
 
-            cipher = stoi(hold);
-            decrypted = repeatSquare(stoi(hold), private_key.d, private_key.n);
+            cipher = stoll(hold);
             is_IV = false;
         }
 
@@ -146,8 +145,8 @@ int main() {
                 j++;
             }
 
-            decrypted = (repeatSquare(stoi(hold), private_key.d, private_key.n)) ^ cipher;
-            cipher = stoi(hold);
+            decrypted = (repeatSquare(stoll(hold), private_key.d, private_key.n)) ^ cipher;
+            cipher = stoll(hold);
 
 
             temp_str = char(decrypted);
