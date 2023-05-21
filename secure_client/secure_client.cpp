@@ -16,7 +16,7 @@
 #define DEFAULT_PORT "1234"
 
 #if defined __unix__ || defined __APPLE__
-  #include <unistd.h>
+#include <unistd.h>
   #include <errno.h>
   #include <stdlib.h>
   #include <stdio.h>
@@ -28,17 +28,17 @@
   #include <cstdio>
   #include <iostream>
 #elif defined _WIN32
-  #include <winsock2.h>
-  #include <ws2tcpip.h> //required by getaddrinfo() and special constants
-  #include <stdlib.h>
-  #include <stdio.h>
-  #include <cstdio>
-  #include <iostream>
-  #define WSVERS MAKEWORD(2,2) /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
-                    //The high-order byte specifies the minor version number;
-                    //the low-order byte specifies the major version number.
+#include <winsock2.h>
+#include <ws2tcpip.h> //required by getaddrinfo() and special constants
+#include <stdlib.h>
+#include <stdio.h>
+#include <cstdio>
+#include <iostream>
+#define WSVERS MAKEWORD(2,2) /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
+//The high-order byte specifies the minor version number;
+//the low-order byte specifies the major version number.
 
-  WSADATA wsadata; //Create a WSADATA object called wsadata.
+WSADATA wsadata; //Create a WSADATA object called wsadata.
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,17 +50,17 @@ using namespace std;
 /////////////////////////////////////////////////////////////////////
 
 void printBuffer(const char *header, char *buffer){
-	cout << "------" << header << "------" << endl;
-	for(unsigned int i=0; i < strlen(buffer); i++){
-		if(buffer[i] == '\r'){
-		   cout << "buffer[" << i << "]=\\r" << endl;
-		} else if(buffer[i] == '\n'){
-		   cout << "buffer[" << i << "]=\\n" << endl;
-		} else {
-		   cout << "buffer[" << i << "]=" << buffer[i] << endl;
-		}
-	}
-	cout << "---" << endl;
+    cout << "------" << header << "------" << endl;
+    for(unsigned int i=0; i < strlen(buffer); i++){
+        if(buffer[i] == '\r'){
+            cout << "buffer[" << i << "]=\\r" << endl;
+        } else if(buffer[i] == '\n'){
+            cout << "buffer[" << i << "]=\\n" << endl;
+        } else {
+            cout << "buffer[" << i << "]=" << buffer[i] << endl;
+        }
+    }
+    cout << "---" << endl;
 }
 
 
@@ -83,34 +83,30 @@ unsigned long long int repeatSquare(unsigned long long int x, unsigned long long
 
 
 struct {
-    unsigned long long int e = 529;
-    unsigned long long int n = 75301;
-} public_key;
+    unsigned long long int e;
+    unsigned long long int n;
+} server_public_key;
+
 
 struct {
-    unsigned long long int d = 24305;
-    unsigned long long int n = 75301;
-} private_key;
+    unsigned long long int e = 1049;
+    unsigned long long int n = 82333;
+} eCA; //public key of CA
 
 
-// Generate random k-bit number for Initialisation Vector
-int generate_IV() {
-    int IV;
-    IV = rand() % 256;
-    return IV;
-}
-
+// Generate random value nonce for Initialisation Vector
+unsigned long long int nonce = rand() % 2000; // value of nonce must be less than n
 
 /////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
 
-char portNum[12];
+    char portNum[12];
 
 #if defined __unix__ || defined __APPLE__
-   int s;
+    int s;
 #elif defined _WIN32
-   SOCKET s;
+    SOCKET s;
 #endif
 
 #define BUFFER_SIZE 500
@@ -118,16 +114,16 @@ char portNum[12];
 #define SEGMENT_SIZE 70
 //segment size, i.e., if fgets gets more than this number of bytes it segments the message
 
-   char send_buffer[BUFFER_SIZE],receive_buffer[BUFFER_SIZE];
-   int n,bytes;
+    char send_buffer[BUFFER_SIZE],receive_buffer[BUFFER_SIZE];
+    int n,bytes;
 
-   char serverHost[NI_MAXHOST];
-   char serverService[NI_MAXSERV];
-   srand(time(NULL));
+    char serverHost[NI_MAXHOST];
+    char serverService[NI_MAXSERV];
+    srand(time(NULL));
 
 
 #if defined __unix__ || defined __APPLE__
-   //nothing to do here
+    //nothing to do here
 
 #elif defined _WIN32
 //********************************************************************
@@ -142,25 +138,25 @@ char portNum[12];
   This also makes certain that Winsock is supported on the system.
 */
 //********************************************************************
-   int err;
+    int err;
 
-   err = WSAStartup(WSVERS, &wsadata);
-   if (err != 0) {
-      WSACleanup();
-    /* Tell the user that we could not find a usable */
-    /* Winsock DLL.                                  */
-      printf("WSAStartup failed with error: %d\n", err);
-      exit(1);
-   }
+    err = WSAStartup(WSVERS, &wsadata);
+    if (err != 0) {
+        WSACleanup();
+        /* Tell the user that we could not find a usable */
+        /* Winsock DLL.                                  */
+        printf("WSAStartup failed with error: %d\n", err);
+        exit(1);
+    }
 
 
-if(USE_IPV6){
+    if(USE_IPV6){
 
-   printf("\n=== IPv6 ===");
-} else { //IPV4
+        printf("\n=== IPv6 ===");
+    } else { //IPV4
 
-   printf("\n=== IPv4 ===");
-}
+        printf("\n=== IPv4 ===");
+    }
 
 //********************************************************************
 /* Confirm that the WinSock DLL supports 2.2.        */
@@ -187,23 +183,23 @@ if(USE_IPV6){
 // set the socket address structure.
 //
 //********************************************************************
-struct addrinfo *result = NULL;
-struct addrinfo hints;
-int iResult;
+    struct addrinfo *result = NULL;
+    struct addrinfo hints;
+    int iResult;
 
-memset(&hints, 0, sizeof(struct addrinfo));
+    memset(&hints, 0, sizeof(struct addrinfo));
 
 
-if(USE_IPV6){
-   hints.ai_family = AF_INET6;
-   printf("\n=== IPv6 ===");
-} else { //IPV4
-   hints.ai_family = AF_INET;
-   printf("\n=== IPv4 ===");
-}
+    if(USE_IPV6){
+        hints.ai_family = AF_INET6;
+        printf("\n=== IPv6 ===");
+    } else { //IPV4
+        hints.ai_family = AF_INET;
+        printf("\n=== IPv4 ===");
+    }
 
-hints.ai_socktype = SOCK_STREAM;
-hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
 
 
@@ -211,26 +207,26 @@ hints.ai_protocol = IPPROTO_TCP;
 //	Dealing with user's arguments
 //*******************************************************************
 
-	//if there are 3 parameters passed to the argv[] array.
-   if (argc == 3){
-	    sprintf(portNum,"%s", argv[2]);
-	    printf("\nUsing port: %s \n", portNum);
-	    iResult = getaddrinfo(argv[1], portNum, &hints, &result);
-	} else {
-	    printf("USAGE: Client IP-address [port]\n"); //missing IP address
-		sprintf(portNum,"%s", DEFAULT_PORT);
-		printf("Default portNum = %s\n",portNum);
-		printf("Using default settings, IP:127.0.0.1, Port:1234\n");
-		iResult = getaddrinfo("127.0.0.1", portNum, &hints, &result);
-	}
+    //if there are 3 parameters passed to the argv[] array.
+    if (argc == 3){
+        sprintf(portNum,"%s", argv[2]);
+        printf("\nUsing port: %s \n", portNum);
+        iResult = getaddrinfo(argv[1], portNum, &hints, &result);
+    } else {
+        printf("USAGE: Client IP-address [port]\n"); //missing IP address
+        sprintf(portNum,"%s", DEFAULT_PORT);
+        printf("Default portNum = %s\n",portNum);
+        printf("Using default settings, IP:127.0.0.1, Port:1234\n");
+        iResult = getaddrinfo("127.0.0.1", portNum, &hints, &result);
+    }
 
-	if (iResult != 0) {
-		 printf("getaddrinfo failed: %d\n", iResult);
+    if (iResult != 0) {
+        printf("getaddrinfo failed: %d\n", iResult);
 #if defined _WIN32
-         WSACleanup();
+        WSACleanup();
 #endif
-		 return 1;
-   }
+        return 1;
+    }
 
 
 //*******************************************************************
@@ -238,26 +234,26 @@ hints.ai_protocol = IPPROTO_TCP;
 //*******************************************************************
 
 #if defined __unix__ || defined __APPLE__
-  	s = -1;
+    s = -1;
 #elif defined _WIN32
- 	s = INVALID_SOCKET;
+    s = INVALID_SOCKET;
 #endif
 
-	s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 
 #if defined __unix__ || defined __APPLE__
-  	if (s < 0) {
+    if (s < 0) {
       printf("socket failed\n");
       freeaddrinfo(result);
   	}
 #elif defined _WIN32
-  //check for errors in socket allocation
-  	if (s == INVALID_SOCKET) {
-      printf("Error at socket(): %d\n", WSAGetLastError());
-      freeaddrinfo(result);
-      WSACleanup();
-      exit(1);//return 1;
-  	}
+    //check for errors in socket allocation
+    if (s == INVALID_SOCKET) {
+        printf("Error at socket(): %d\n", WSAGetLastError());
+        freeaddrinfo(result);
+        WSACleanup();
+        exit(1);//return 1;
+    }
 #endif
 
 
@@ -266,67 +262,141 @@ hints.ai_protocol = IPPROTO_TCP;
 //*******************************************************************
 
 
-	 if (connect(s, result->ai_addr, result->ai_addrlen) != 0) {
+    if (connect(s, result->ai_addr, result->ai_addrlen) != 0) {
         printf("\nconnect failed\n");
-		freeaddrinfo(result);
+        freeaddrinfo(result);
 #if defined _WIN32
         WSACleanup();
 #endif
-   	    exit(1);
-      } else {
-		char ipver[80];
+        exit(1);
+    } else {
+        char ipver[80];
 
-		if (result->ai_family == AF_INET)
-		{
-			strcpy(ipver,"IPv4");
-		}
-		else if(result->ai_family == AF_INET6)
-		{
-			strcpy(ipver,"IPv6");
-		}
+        if (result->ai_family == AF_INET)
+        {
+            strcpy(ipver,"IPv4");
+        }
+        else if(result->ai_family == AF_INET6)
+        {
+            strcpy(ipver,"IPv6");
+        }
 
 
 #if defined __unix__ || defined __APPLE__
-       int returnValue;
+        int returnValue;
 #elif defined _WIN32
-       DWORD returnValue;
+        DWORD returnValue;
 #endif
 
-		memset(serverHost, 0, sizeof(serverHost));
-	    memset(serverService, 0, sizeof(serverService));
+        memset(serverHost, 0, sizeof(serverHost));
+        memset(serverService, 0, sizeof(serverService));
 
         returnValue=getnameinfo((struct sockaddr *)result->ai_addr, /*addrlen*/ result->ai_addrlen,
-               serverHost, sizeof(serverHost),
-               serverService, sizeof(serverService), NI_NUMERICHOST);
+                                serverHost, sizeof(serverHost),
+                                serverService, sizeof(serverService), NI_NUMERICHOST);
 
-		if(returnValue != 0){
+        if(returnValue != 0){
 
 #if defined __unix__ || defined __APPLE__
-           printf("\nError detected: getnameinfo() failed with error\n");
+            printf("\nError detected: getnameinfo() failed with error\n");
 #elif defined _WIN32
-           printf("\nError detected: getnameinfo() failed with error#%d\n",WSAGetLastError());
+            printf("\nError detected: getnameinfo() failed with error#%d\n",WSAGetLastError());
 #endif
-	       exit(1);
+            exit(1);
 
-	    } else{
-		   printf("\nConnected to <<<SERVER>>> extracted IP address: %s, %s at port: %s\n", serverHost, ipver,/* serverService */ portNum);  //serverService is nfa
-	    }
-	}
+        } else{
+            printf("\nConnected to <<<SERVER>>> extracted IP address: %s, %s at port: %s\n", serverHost, ipver,/* serverService */ portNum);  //serverService is nfa
+        }
+    }
 
 
 
+//receives dCA
+    n = 0;
+    while (1){
+        bytes = recv(s, &receive_buffer[n], 1, 0);
+        if ((bytes == SOCKET_ERROR) || (bytes == 0)) {
+            printf("recv failed\n");
+            exit(1);
+        }
+        if (receive_buffer[n] == '\n') {  /*end on a LF*/
+            receive_buffer[n] = '\0';
+            break;
+        }
+        if (receive_buffer[n] != '\r') {
+            n++;   /*ignore CR's*/
+        }
+    }
+    printf("Received Server's Certificate: PUBLIC_KEY %s\n",receive_buffer);
+
+    //sends acknowledgment
+    printf("Sending reply to SERVER: ACK 226 Public Key received\n");
+    sprintf(send_buffer, "ACK 226 Public Key received\r\n");
+    bytes = send(s, send_buffer, strlen(send_buffer),0);
+    if (bytes == SOCKET_ERROR) {
+        printf("send failed\n");
+        WSACleanup();
+        exit(1);
+    }
+
+    n = 0;
+    string::size_type sz = 0;
+    unsigned long long temp_num[2];
+    char * pch;
+    pch = strtok(receive_buffer," ,");
+    while(pch != NULL){
+        temp_num[n] = stoull (pch,&sz,0);
+        pch = strtok(NULL, " ,");
+        n++;
+    }
+    // encrypt keys
+    server_public_key.e = repeatSquare(temp_num[0], eCA.e, eCA.n);
+    server_public_key.n = repeatSquare(temp_num[1], eCA.e, eCA.n);
+    printf("Decrypted Server's Public Key: [e = %lld, n = %lld]\n", server_public_key.e, server_public_key.n);
+
+    // encrypt nonce
+    unsigned long long cipher;
+    cipher = repeatSquare(nonce, server_public_key.e, server_public_key.n);
+
+    // send the encrypted nonce
+    printf("Sending Nonce to SERVER: NONCE %lld\n", cipher);
+    sprintf(send_buffer, "%lld\r\n", cipher);
+    bytes = send(s, send_buffer, strlen(send_buffer),0);
+    if (bytes == SOCKET_ERROR) {
+        printf("send failed\n");
+        WSACleanup();
+        exit(1);
+    }
+
+    // receive ACK 220 message from Server
+    n = 0;
+    while (1){
+        bytes = recv(s, &receive_buffer[n], 1, 0);
+        if ((bytes == SOCKET_ERROR) || (bytes == 0)) {
+            printf("recv failed\n");
+            exit(1);
+        }
+        if (receive_buffer[n] == '\n') {
+            receive_buffer[n] = '\0';
+            break;
+        }
+        if (receive_buffer[n] != '\r') {
+            n++;   /*ignore CR's*/
+        }
+    }
+    printf("Received packet: %s\n", receive_buffer);
 
 //*******************************************************************
 //Get input while user don't type "."
 //*******************************************************************
-	printf("\n--------------------------------------------\n");
-	printf("you may now start sending commands to the <<<SERVER>>>\n");
-	printf("\nType here:");
-	memset(&send_buffer,0,BUFFER_SIZE);
+    printf("\n--------------------------------------------\n");
+    printf("you may now start sending commands to the <<<SERVER>>>\n");
+    printf("\nType here:");
+    memset(&send_buffer,0,BUFFER_SIZE);
     if(fgets(send_buffer,SEGMENT_SIZE,stdin) == NULL){
-		printf("error using fgets()\n");
-		exit(1);
-	}
+        printf("error using fgets()\n");
+        exit(1);
+    }
 
     char encrypted_message[BUFFER_SIZE];
     string temp_str;
@@ -334,95 +404,95 @@ hints.ai_protocol = IPPROTO_TCP;
     int encrypt;
 
 
-	//while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
-	while ((strncmp(send_buffer,".",1) != 0)) {
+    //while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
+    while ((strncmp(send_buffer,".",1) != 0)) {
 
         fill_n(encrypted_message, strlen(encrypted_message), 0);
 
-           for (int i = 0; i < strlen(send_buffer); i++) {
-                   if (i == 0) {
-                       encrypt = generate_IV();
-                   }
-                   else {
-                       encrypt = encrypt ^ send_buffer[i-1];
-                   }
+        for (int i = 0; i < strlen(send_buffer); i++) {
+            if (i == 0) {
+                encrypt = nonce;
+            }
+            else {
+                encrypt = encrypt ^ send_buffer[i-1];
+            }
 
-                   encrypt = repeatSquare(encrypt, public_key.e, public_key.n);
-                   temp_str = to_string(encrypt);
-                   char_array = temp_str.c_str();
-                   strcat(encrypted_message, char_array);
-                   strcat(encrypted_message, " ");
-           }
+            encrypt = repeatSquare(encrypt, server_public_key.e, server_public_key.n);
+            temp_str = to_string(encrypt);
+            char_array = temp_str.c_str();
+            strcat(encrypted_message, char_array);
+            strcat(encrypted_message, " ");
+        }
         strcat(encrypted_message, "\0"); //strip '\n'
         strcat(encrypted_message,"\r\n");
 
 
-	//*******************************************************************
-	//SEND
-	//*******************************************************************
+        //*******************************************************************
+        //SEND
+        //*******************************************************************
 
-	       bytes = send(s, encrypted_message, strlen(encrypted_message),0);
-           printf("\nMSG SENT <--: %s\n",encrypted_message);//line sent
-	       printf("Message length: %d \n",(int)strlen(encrypted_message));
+        bytes = send(s, encrypted_message, strlen(encrypted_message),0);
+        printf("\nMSG SENT <--: %s\n",encrypted_message);//line sent
+        printf("Message length: %d \n",(int)strlen(encrypted_message));
 
 
 
 #if defined __unix__ || defined __APPLE__
-          if (bytes == -1) {
+        if (bytes == -1) {
 	         printf("send failed\n");
     		 exit(1);
 	      }
 #elif defined _WIN32
-      	  if (bytes == SOCKET_ERROR) {
-	         printf("send failed\n");
-    		 WSACleanup();
-	      	 exit(1);
-	      }
+        if (bytes == SOCKET_ERROR) {
+            printf("send failed\n");
+            WSACleanup();
+            exit(1);
+        }
 #endif
 
 
-	      n = 0;
-	      while (1) {
-	//*******************************************************************
-	//RECEIVE
-	//*******************************************************************
-	         bytes = recv(s, &receive_buffer[n], 1, 0);
+        n = 0;
+        while (1) {
+            //*******************************************************************
+            //RECEIVE
+            //*******************************************************************
+            bytes = recv(s, &receive_buffer[n], 1, 0);
 
 #if defined __unix__ || defined __APPLE__
-		     if ((bytes == -1) || (bytes == 0)) {
+            if ((bytes == -1) || (bytes == 0)) {
 	            printf("recv failed\n");
 	         	exit(1);
 	         }
 
 #elif defined _WIN32
-             if ((bytes == SOCKET_ERROR) || (bytes == 0)) {
-	            printf("recv failed\n");
-	         	exit(1);
-	         }
+            if ((bytes == SOCKET_ERROR) || (bytes == 0)) {
+                printf("recv failed\n");
+                exit(1);
+            }
 #endif
 
 
-	         if (receive_buffer[n] == '\n') {  /*end on a LF*/
-	            receive_buffer[n] = '\0';
-	            break;
-	         }
-	         if (receive_buffer[n] != '\r') n++;   /*ignore CR's*/
-	      }
+            if (receive_buffer[n] == '\n') {  /*end on a LF*/
+                receive_buffer[n] = '\0';
+                break;
+            }
+            if (receive_buffer[n] != '\r') n++;   /*ignore CR's*/
+        }
 
-	      printf("MSG RECEIVED --> %s\n",receive_buffer);
+        printf("MSG RECEIVED --> %s\n",receive_buffer);
 
-			//get another user input
-	      memset(&send_buffer, 0, BUFFER_SIZE);
-          printf("\nType here:");
-	      if(fgets(send_buffer,SEGMENT_SIZE,stdin) == NULL){
-		     printf("error using fgets()\n");
-		     exit(1);
-	     }
+        //get another user input
+        memset(&send_buffer, 0, BUFFER_SIZE);
+        printf("\nType here:");
+        if(fgets(send_buffer,SEGMENT_SIZE,stdin) == NULL){
+            printf("error using fgets()\n");
+            exit(1);
+        }
 
 
-	}
-	printf("\n--------------------------------------------\n");
-	printf("<<<CLIENT>>> is shutting down...\n");
+    }
+    printf("\n--------------------------------------------\n");
+    printf("<<<CLIENT>>> is shutting down...\n");
 
 //*******************************************************************
 //CLOSESOCKET
@@ -435,5 +505,5 @@ hints.ai_protocol = IPPROTO_TCP;
 #endif
 
 
-   return 0;
+    return 0;
 }
