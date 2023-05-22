@@ -89,13 +89,13 @@ struct {
 
 
 struct {
-    unsigned long long int e = 1049;
-    unsigned long long int n = 82333;
+    unsigned long long int e = 1151;
+    unsigned long long int n = 86881;
 } eCA; //public key of CA
 
 
 // Generate random value nonce for Initialisation Vector
-unsigned long long int nonce = rand() % 2000; // value of nonce must be less than n
+unsigned long long int nonce;
 
 /////////////////////////////////////////////////////////////////////
 
@@ -341,25 +341,26 @@ int main(int argc, char *argv[]) {
 
     n = 0;
     string::size_type sz = 0;
-    unsigned long long temp_num[2];
-    char * pch;
-    pch = strtok(receive_buffer," ,");
-    while(pch != NULL){
-        temp_num[n] = stoull (pch,&sz,0);
-        pch = strtok(NULL, " ,");
+    unsigned long long server_key[2];
+    char *ch;
+    ch = strtok(receive_buffer," ");
+    while(ch != NULL){
+        server_key[n] = stoull (ch,&sz,0);
+        ch = strtok(NULL, " ");
         n++;
     }
     // encrypt keys
-    server_public_key.e = repeatSquare(temp_num[0], eCA.e, eCA.n);
-    server_public_key.n = repeatSquare(temp_num[1], eCA.e, eCA.n);
+    server_public_key.e = repeatSquare(server_key[0], eCA.e, eCA.n);
+    server_public_key.n = repeatSquare(server_key[1], eCA.e, eCA.n);
     printf("Decrypted Server's Public Key: [e = %lld, n = %lld]\n", server_public_key.e, server_public_key.n);
 
     // encrypt nonce
+    nonce = rand() % server_public_key.n; // nonce must be less than the value of n
     unsigned long long cipher;
     cipher = repeatSquare(nonce, server_public_key.e, server_public_key.n);
 
     // send the encrypted nonce
-    printf("Sending Nonce to SERVER: NONCE %lld\n", cipher);
+    printf("Sending encrypted Nonce to SERVER: NONCE %lld\n", cipher);
     sprintf(send_buffer, "%lld\r\n", cipher);
     bytes = send(s, send_buffer, strlen(send_buffer),0);
     if (bytes == SOCKET_ERROR) {
@@ -410,12 +411,8 @@ int main(int argc, char *argv[]) {
         fill_n(encrypted_message, strlen(encrypted_message), 0);
 
         for (int i = 0; i < strlen(send_buffer); i++) {
-            if (i == 0) {
-                encrypt = nonce;
-            }
-            else {
-                encrypt = encrypt ^ send_buffer[i-1];
-            }
+            if (i == 0) encrypt = nonce;
+            else encrypt = encrypt ^ send_buffer[i-1];
 
             encrypt = repeatSquare(encrypt, server_public_key.e, server_public_key.n);
             temp_str = to_string(encrypt);
@@ -423,9 +420,8 @@ int main(int argc, char *argv[]) {
             strcat(encrypted_message, char_array);
             strcat(encrypted_message, " ");
         }
-        strcat(encrypted_message, "\0"); //strip '\n'
+        //strcat(encrypted_message, "\0"); //strip '\n'
         strcat(encrypted_message,"\r\n");
-
 
         //*******************************************************************
         //SEND
@@ -476,10 +472,11 @@ int main(int argc, char *argv[]) {
                 receive_buffer[n] = '\0';
                 break;
             }
-            if (receive_buffer[n] != '\r') n++;   /*ignore CR's*/
+            if (receive_buffer[n] != '\r') n++; /*ignore CR's*/
         }
 
-        printf("MSG RECEIVED --> %s\n",receive_buffer);
+        printf("\nMSG RECEIVED --> %s\n",receive_buffer);
+        printf("--------------------------------------------\n");
 
         //get another user input
         memset(&send_buffer, 0, BUFFER_SIZE);

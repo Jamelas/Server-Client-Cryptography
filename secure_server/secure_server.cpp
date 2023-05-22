@@ -81,20 +81,20 @@ unsigned long long int repeatSquare(unsigned long long int x, unsigned long long
 
 
 struct {
-    unsigned long long int e = 529;
-    unsigned long long int n = 75301;
+    unsigned long long int e = 1049;
+    unsigned long long int n = 82333;
 } public_key;
 
 
 struct {
-    unsigned long long int d = 24305;
-    unsigned long long int n = 75301;
+    unsigned long long int d = 32969;
+    unsigned long long int n = 82333;
 } private_key;
 
 
 struct {
-    unsigned long long d = 32969;
-    unsigned long long n = 82333;
+    unsigned long long d = 65375;
+    unsigned long long n = 86881; // CA.n must be greater than server's key n
 } dCA ; //private key of CA
 
 unsigned long long cipher;
@@ -406,7 +406,7 @@ int main(int argc, char *argv[]) {
 
         printf("\nSending packet: PUBLIC_KEY %lld, %lld\r\n",encrypted_key.e, encrypted_key.n);
 
-        sprintf(send_buffer, "%lld, %lld\r\n", encrypted_key.e, encrypted_key.n);
+        sprintf(send_buffer, "%lld %lld\r\n", encrypted_key.e, encrypted_key.n);
         bytes = send(ns, send_buffer, strlen(send_buffer), 0);
         if (bytes == SOCKET_ERROR) break;
 
@@ -531,13 +531,15 @@ int main(int argc, char *argv[]) {
 
                 cipher = stoull(temp);
             }
-            printf("The encrypted message is: %s\r\n", decrypted_message);
+            strcat(decrypted_message, "\r\n");
+            //printf("The encrypted message is: %s\r\n", decrypted_message);
 //********************************************************************
 //SEND
 //********************************************************************
 
-            bytes = send(ns, send_buffer, strlen(send_buffer), 0);
-            printf("MSG SENT --> %s\n",send_buffer);
+            bytes = send(ns, decrypted_message, strlen(decrypted_message), 0);
+            printf("\nMSG SENT --> %s\n",decrypted_message);
+            printf("--------------------------------------------\n");
 
 #if defined __unix__ || defined __APPLE__
             if (bytes < 0) break;
