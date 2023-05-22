@@ -12,7 +12,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-#define USE_IPV6 false
+#define USE_IPV6 true
 #define DEFAULT_PORT "1234"
 
 #if defined __unix__ || defined __APPLE__
@@ -81,12 +81,10 @@ unsigned long long int repeatSquare(unsigned long long int x, unsigned long long
 }
 
 
-
 struct {
     unsigned long long int e;
     unsigned long long int n;
 } server_public_key;
-
 
 struct {
     unsigned long long int e = 1151;
@@ -110,7 +108,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 #define BUFFER_SIZE 500
-//remember that the BUFFESIZE has to be at least big enough to receive the answer from the server
+//remember that the BUFFER_SIZE has to be at least big enough to receive the answer from the server
 #define SEGMENT_SIZE 70
 //segment size, i.e., if fgets gets more than this number of bytes it segments the message
 
@@ -151,7 +149,6 @@ int main(int argc, char *argv[]) {
 
 
     if(USE_IPV6){
-
         printf("\n=== IPv6 ===");
     } else { //IPV4
 
@@ -181,7 +178,6 @@ int main(int argc, char *argv[]) {
 
 //********************************************************************
 // set the socket address structure.
-//
 //********************************************************************
     struct addrinfo *result = NULL;
     struct addrinfo hints;
@@ -192,15 +188,15 @@ int main(int argc, char *argv[]) {
 
     if(USE_IPV6){
         hints.ai_family = AF_INET6;
-        printf("\n=== IPv6 ===");
+        printf("\n=== IPv6 ===\n");
     } else { //IPV4
         hints.ai_family = AF_INET;
-        printf("\n=== IPv4 ===");
+        printf("\n=== IPv4 ===\n");
     }
 
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-
+    //hints.ai_flags = AI_PASSIVE;
 
 
 //*******************************************************************
@@ -217,7 +213,7 @@ int main(int argc, char *argv[]) {
         sprintf(portNum,"%s", DEFAULT_PORT);
         printf("Default portNum = %s\n",portNum);
         printf("Using default settings, IP:127.0.0.1, Port:1234\n");
-        iResult = getaddrinfo("127.0.0.1", portNum, &hints, &result);
+        iResult = getaddrinfo(NULL, portNum, &hints, &result);
     }
 
     if (iResult != 0) {
@@ -310,8 +306,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-
-//receives dCA
+//receive the Server's encrypted public key dCA(e, n)
     n = 0;
     while (1){
         bytes = recv(s, &receive_buffer[n], 1, 0);
@@ -319,17 +314,17 @@ int main(int argc, char *argv[]) {
             printf("recv failed\n");
             exit(1);
         }
-        if (receive_buffer[n] == '\n') {  /*end on a LF*/
+        if (receive_buffer[n] == '\n') {
             receive_buffer[n] = '\0';
             break;
         }
         if (receive_buffer[n] != '\r') {
-            n++;   /*ignore CR's*/
+            n++;
         }
     }
     printf("Received Server's Certificate: PUBLIC_KEY %s\n",receive_buffer);
 
-    //sends acknowledgment
+    //send acknowledgment
     printf("Sending reply to SERVER: ACK 226 Public Key received\n");
     sprintf(send_buffer, "ACK 226 Public Key received\r\n");
     bytes = send(s, send_buffer, strlen(send_buffer),0);
@@ -349,7 +344,8 @@ int main(int argc, char *argv[]) {
         ch = strtok(NULL, " ");
         n++;
     }
-    // encrypt keys
+
+    // decrypt the Server's public key
     server_public_key.e = repeatSquare(server_key[0], eCA.e, eCA.n);
     server_public_key.n = repeatSquare(server_key[1], eCA.e, eCA.n);
     printf("Decrypted Server's Public Key: [e = %lld, n = %lld]\n", server_public_key.e, server_public_key.n);
@@ -369,7 +365,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // receive ACK 220 message from Server
+    // receive message (ACK 220) from Server
     n = 0;
     while (1){
         bytes = recv(s, &receive_buffer[n], 1, 0);
@@ -382,12 +378,15 @@ int main(int argc, char *argv[]) {
             break;
         }
         if (receive_buffer[n] != '\r') {
-            n++;   /*ignore CR's*/
+            n++;
         }
     }
     printf("Received packet: %s\n", receive_buffer);
 
+
 //*******************************************************************
+//The client can now start sending encrypted messages to the Server
+//
 //Get input while user don't type "."
 //*******************************************************************
     printf("\n--------------------------------------------\n");
@@ -404,11 +403,9 @@ int main(int argc, char *argv[]) {
     const char *char_array = NULL;
     int encrypt;
 
-
-    //while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
     while ((strncmp(send_buffer,".",1) != 0)) {
 
-        fill_n(encrypted_message, strlen(encrypted_message), 0);
+        fill_n(encrypted_message, strlen(encrypted_message), 0); // Clear any existing values
 
         for (int i = 0; i < strlen(send_buffer); i++) {
             if (i == 0) encrypt = nonce;
