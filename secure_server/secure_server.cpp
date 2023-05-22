@@ -8,7 +8,7 @@
 //////////////////////////////////////////////////////////////
 
 
-#define USE_IPV6 false  //if set to false, IPv4 addressing scheme will be used; you need to set this to true to
+#define USE_IPV6 true  //if set to false, IPv4 addressing scheme will be used; you need to set this to true to
 //enable IPv6 later on.  The assignment will be marked using IPv6!
 
 #if defined __unix__ || defined __APPLE__
@@ -78,8 +78,6 @@ unsigned long long int repeatSquare(unsigned long long int x, unsigned long long
 }
 
 
-
-
 struct {
     unsigned long long int e = 1049;
     unsigned long long int n = 82333;
@@ -122,12 +120,8 @@ int main(int argc, char *argv[]) {
     char send_buffer[BUFFER_SIZE],receive_buffer[RBUFFER_SIZE];
     int n,bytes,addrlen;
     char portNum[NI_MAXSERV];
-    // char username[80];
-    // char passwd[80];
     string temp_str;
     const char *char_array = NULL;
-
-    //memset(&localaddr,0,sizeof(localaddr));
 
 
 #if defined __unix__ || defined __APPLE__
@@ -192,8 +186,6 @@ int main(int argc, char *argv[]) {
 // STEP#0 - Specify server address information and socket properties
 //********************************************************************
 
-
-//ZeroMemory(&hints, sizeof (hints)); //alternatively, for Windows only
     memset(&hints, 0, sizeof(struct addrinfo));
 
     if(USE_IPV6){
@@ -211,14 +203,10 @@ int main(int argc, char *argv[]) {
 // Resolve the local address and port to be used by the server
     if(argc==2){
         iResult = getaddrinfo(NULL, argv[1], &hints, &result); //converts human-readable text strings representing hostnames or IP addresses
-        //into a dynamically allocated linked list of struct addrinfo structures
-        //IPV4 & IPV6-compliant
         sprintf(portNum,"%s", argv[1]);
         printf("\nargv[1] = %s\n", argv[1]);
     } else {
         iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result); //converts human-readable text strings representing hostnames or IP addresses
-        //into a dynamically allocated linked list of struct addrinfo structures
-        //IPV4 & IPV6-compliant
         sprintf(portNum,"%s", DEFAULT_PORT);
         printf("\nUsing DEFAULT_PORT = %s\n", portNum);
     }
