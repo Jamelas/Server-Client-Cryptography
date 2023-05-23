@@ -296,11 +296,6 @@ int main(int argc, char *argv[]) {
     //no longer needed
 //********************************************************************
 
-/*
-   if (bind(s,(struct sockaddr *)(&localaddr),sizeof(localaddr)) == SOCKET_ERROR) {
-      printf("Bind failed!\n");
-   }
-*/
 
 //********************************************************************
 //STEP#3 - LISTEN on welcome socket for any incoming connection
@@ -338,8 +333,6 @@ int main(int argc, char *argv[]) {
         ns = INVALID_SOCKET;
 #endif
 
-        //Accept a client socket
-        //ns = accept(s, NULL, NULL);
 
 //********************************************************************
 // STEP#4 - Accept a client connection.
@@ -386,14 +379,14 @@ int main(int argc, char *argv[]) {
         printf("Server's Private Key (%lld, %lld)\n", private_key.d, private_key.n);
 
 
+        // encrypt the server's public key using dCA(e, n)
         struct {
             unsigned long long int e = repeatSquare(public_key.e, dCA.d, dCA.n);
             unsigned long long int n = repeatSquare(public_key.n, dCA.d, dCA.n);
-        } encrypted_key; // before sending to the Client,
-                            // the Server's public key is encrypted using dCA
-
+        } encrypted_key;
         printf("\nSending packet: PUBLIC_KEY %lld, %lld\r\n",encrypted_key.e, encrypted_key.n);
 
+        // send the encrypted key to the client
         sprintf(send_buffer, "%lld %lld\r\n", encrypted_key.e, encrypted_key.n);
         bytes = send(ns, send_buffer, strlen(send_buffer), 0);
         if (bytes == SOCKET_ERROR) break;
@@ -403,18 +396,15 @@ int main(int argc, char *argv[]) {
             bytes = recv(ns, &receive_buffer[n], 1, 0);
 
             if ((bytes == SOCKET_ERROR) || (bytes == 0)) break;
-
-            if (receive_buffer[n] == '\n') { //end on a LF, Note: LF is equal to one character
+            if (receive_buffer[n] == '\n') { // end on a LF
                 receive_buffer[n] = '\0';
                 printf("Received packet: %s\n", receive_buffer);
                 break;
             }
-            if (receive_buffer[n] != '\r'){
-                n++; //ignore CRs
-            }
+            if (receive_buffer[n] != '\r') n++;  // ignore CRs
         }
 
-        //Receive nonce
+        // receive nonce
         n=0;
         char s[BUFFER_SIZE];
         while (1) {
@@ -422,18 +412,18 @@ int main(int argc, char *argv[]) {
 
             if ((bytes == SOCKET_ERROR) || (bytes == 0)) break;
 
-            if (receive_buffer[n] == '\n') {
+            if (receive_buffer[n] == '\n') { // end on a LF
                 receive_buffer[n] = '\0';
                 printf("Received packet: NONCE %s\n", receive_buffer);
                 break;
             }
-            if (receive_buffer[n] != '\r'){
+            if (receive_buffer[n] != '\r'){ // ignore CRs
                 s[n] = receive_buffer[n];
                 n++;
             }
         }
 
-        //Decrypt nonce
+        // decrypt nonce
         char *c = s;
         string::size_type sz = 0;
         unsigned long long nonce;
@@ -442,12 +432,11 @@ int main(int argc, char *argv[]) {
         cipher = repeatSquare(nonce, private_key.d, private_key.n);
         printf("After decryption, received nonce = %lld\n", cipher);
 
-        //Send ACK 220
+        // send acknowledge of received nonce
         printf("Sending packet: ACK 220 nonce ok\n");
         sprintf(send_buffer, "ACK 220 nonce ok\r\n");
         bytes = send(ns, send_buffer, strlen(send_buffer), 0);
         if (bytes == SOCKET_ERROR) break;
-
 
 
 
@@ -467,37 +456,33 @@ int main(int argc, char *argv[]) {
 
                 if ((bytes < 0) || (bytes == 0)) break;
 
-                if (receive_buffer[n] == '\n') { /*end on a LF, Note: LF is equal to one character*/
+                if (receive_buffer[n] == '\n') { // end on a LF
                     receive_buffer[n] = '\0';
                     break;
                 }
-                if (receive_buffer[n] != '\r') n++; /*ignore CRs*/
+                if (receive_buffer[n] != '\r') n++; // ignore CRs
             }
-
             if ((bytes < 0) || (bytes == 0)) break;
             sprintf(send_buffer, "Message:'%s' - There are %d bytes of information\r\n", receive_buffer, n);
 
-
-            // repeatSquare(cipher, private_key.d, private_key.n); //decrypt
 
 //********************************************************************
 //PROCESS REQUEST
 //********************************************************************
             printf("MSG RECEIVED <--: %s\n",receive_buffer);
 
-
             unsigned long long int decrypted;
-
             char decrypted_message[BUFFER_SIZE];
             char temp[BUFFER_SIZE];
             bool is_nonce = true;
-            fill_n(decrypted_message, strlen(decrypted_message), 0);
-            fill_n(temp, strlen(temp), 0);
+            fill_n(decrypted_message, strlen(decrypted_message), 0); // clear buffer
+            fill_n(temp, strlen(temp), 0); // clear buffer
+
             for (int i = 0; i < strlen(receive_buffer); i++) {
                 fill_n(temp, strlen(temp), 0);
 
                 if (i == strlen(receive_buffer)) {
-                    strcat(decrypted_message, "\0"); //strip '\n'
+                    strcat(decrypted_message, "\0"); // strip '\n'
                     break;
                 }
 
@@ -515,12 +500,11 @@ int main(int argc, char *argv[]) {
                     char_array = temp_str.c_str();
                     strcat(decrypted_message, char_array);
                 }
-                is_nonce = false;
-
+                is_nonce = false; // nonce has been decrypted
                 cipher = stoull(temp);
             }
             strcat(decrypted_message, "\r\n");
-            //printf("The encrypted message is: %s\r\n", decrypted_message);
+
 //********************************************************************
 //SEND
 //********************************************************************

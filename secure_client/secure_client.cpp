@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-//receive the Server's encrypted public key dCA(e, n)
+    // receive the Server's encrypted public key dCA(e, n)
     n = 0;
     while (1){
         bytes = recv(s, &receive_buffer[n], 1, 0);
@@ -314,11 +314,11 @@ int main(int argc, char *argv[]) {
             printf("recv failed\n");
             exit(1);
         }
-        if (receive_buffer[n] == '\n') {
+        if (receive_buffer[n] == '\n') { // end on a LF
             receive_buffer[n] = '\0';
             break;
         }
-        if (receive_buffer[n] != '\r') {
+        if (receive_buffer[n] != '\r') { // ignore CRs
             n++;
         }
     }
@@ -339,6 +339,7 @@ int main(int argc, char *argv[]) {
     unsigned long long server_key[2];
     char *ch;
     ch = strtok(receive_buffer," ");
+    // split the buffer into separate encrypted values
     while(ch != NULL){
         server_key[n] = stoull (ch,&sz,0);
         ch = strtok(NULL, " ");
@@ -373,13 +374,11 @@ int main(int argc, char *argv[]) {
             printf("recv failed\n");
             exit(1);
         }
-        if (receive_buffer[n] == '\n') {
+        if (receive_buffer[n] == '\n') { // end on a LF
             receive_buffer[n] = '\0';
             break;
         }
-        if (receive_buffer[n] != '\r') {
-            n++;
-        }
+        if (receive_buffer[n] != '\r') n++; // ignore CRs
     }
     printf("Received packet: %s\n", receive_buffer);
 
@@ -401,7 +400,7 @@ int main(int argc, char *argv[]) {
     char encrypted_message[BUFFER_SIZE];
     string temp_str;
     const char *char_array = NULL;
-    int encrypt;
+    unsigned long long int encrypt;
 
     while ((strncmp(send_buffer,".",1) != 0)) {
 
@@ -417,7 +416,6 @@ int main(int argc, char *argv[]) {
             strcat(encrypted_message, char_array);
             strcat(encrypted_message, " ");
         }
-        //strcat(encrypted_message, "\0"); //strip '\n'
         strcat(encrypted_message,"\r\n");
 
         //*******************************************************************
@@ -465,14 +463,14 @@ int main(int argc, char *argv[]) {
 #endif
 
 
-            if (receive_buffer[n] == '\n') {  /*end on a LF*/
+            if (receive_buffer[n] == '\n') {  // end on a LF
                 receive_buffer[n] = '\0';
                 break;
             }
-            if (receive_buffer[n] != '\r') n++; /*ignore CR's*/
+            if (receive_buffer[n] != '\r') n++; // ignore CR's
         }
 
-        printf("\nMSG RECEIVED --> %s\n",receive_buffer);
+        printf("\nMSG RECEIVED --> %s\n", receive_buffer);
         printf("--------------------------------------------\n");
 
         //get another user input
@@ -482,7 +480,6 @@ int main(int argc, char *argv[]) {
             printf("error using fgets()\n");
             exit(1);
         }
-
 
     }
     printf("\n--------------------------------------------\n");
