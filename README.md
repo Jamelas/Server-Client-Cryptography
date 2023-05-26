@@ -5,10 +5,10 @@ This program was created as part of an assignment for a third year Computer Scie
 
 ## About the Assignment
 
-The source code for a server and client was provided by the teacher (this has been cited in the .cpp files). In the source code provided, the client is able to send messages to the server and the server will reply back to the client with the sent message. These messages are left in a plain state.
+The source code for a server and client was provided by the teacher (this has been cited in the .cpp files). In the source code provided, the client is able to send messages to the server and the server will reply back to the client with the sent message. These messages are left in plain text.
 
 The purpose of the assignment was to implement RSA encryption with cipher block chaining, as well as the subsequent decryption. 
-Additionally suitable public and private keys for both the Server and Certificate Authority need to be created for use in the encryption/decryption.
+Additionally suitable public and private keys for both the Server and Certificate Authority needed to be created for use during encryption/decryption.
 
 ## Requirements (summarized from the assignment specifications)
 
