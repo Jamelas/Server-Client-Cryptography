@@ -1,3 +1,6 @@
+#Author: Napoleon Reyes, Ph.D.
+#         Massey University, Albany
+
 secure_server.out		: 	secure_server.o 
 	g++ -std=c++11 secure_server.cpp -o secure_server.out
 			

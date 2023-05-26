@@ -1,3 +1,6 @@
+#Author: Napoleon Reyes, Ph.D.
+#         Massey University, Albany
+
 secure_client.exe		: 	secure_client.o 
 	g++ -Wall -O2 secure_client.cpp -lws2_32 -o secure_client.exe
 			

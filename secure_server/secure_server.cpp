@@ -5,6 +5,9 @@
 // References: https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
 //             http://long.ccaba.upc.edu/long/045Guidelines/eva/ipv6.html#daytimeServer6
 //
+// Author: Napoleon Reyes, Ph.D.
+//         Massey University, Albany
+//
 //////////////////////////////////////////////////////////////
 
 

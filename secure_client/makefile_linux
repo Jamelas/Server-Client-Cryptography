@@ -1,3 +1,6 @@
+#Author: Napoleon Reyes, Ph.D.
+#         Massey University, Albany
+
 secure_client.out		: 	secure_client.o 
 	g++ -Wall -O2 secure_client.cpp -o secure_client.out 
 			

@@ -1,3 +1,6 @@
+#Author: Napoleon Reyes, Ph.D.
+#         Massey University, Albany
+
 secure_server.exe		: 	secure_server.o 
 	g++ secure_server.cpp -lws2_32 -o secure_server.exe
 			
