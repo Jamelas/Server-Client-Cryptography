@@ -3,12 +3,16 @@ TCP Server/Client using RSA algorithm with Cipher Block Chaining.
 
 This program was created as part of an assignment for a third-year Computer Science paper at Massey University. 
 
+<br/>
+
 ## About the Assignment
 
 The source code for a server and client was provided by the teacher (this has been cited in the .cpp files). In the source code provided, the client is able to send messages to the server and the server will reply back to the client with the sent message. These messages are left in plain text.
 
 The purpose of the assignment was to implement RSA encryption with cipher block chaining, as well as the subsequent decryption. 
 Additionally, suitable public and private keys for both the Server and Certificate Authority needed to be created for use during encryption/decryption.
+
+<br/>
 
 ## Requirements (summarized from the assignment specifications)
 
@@ -33,6 +37,7 @@ Client:
 Restrictions:
 OpenSSL (or other libraries with built-in cryptographic functions) are not allowed.
 
+<br/>
 
 ## How to use
 
@@ -40,6 +45,10 @@ OpenSSL (or other libraries with built-in cryptographic functions) are not allow
 2. Run the executables (first Secure_Server.exe and then Secure_Client.exe).
 3. From the client terminal, type the message you want to send and press enter.
 
+<br/>
+<br/>
+
+---
 
 ## Notes
 - Values for the Server and Certificate Authority are hardcoded. The Server has a Public Key, Private Key, and Private CA Key. The client only has the CA's Public Key.
