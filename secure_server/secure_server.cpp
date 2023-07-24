@@ -171,6 +171,7 @@ int main(int argc, char *argv[]) {
     }
     else{
         printf("\n\n<<<TCP SERVER>>>\n");
+        printf("\n\n<<<Encryption and Decryption by Jamie Douglas>>>\n");
         printf("\nThe Winsock 2.2 dll was initialised.\n");
     }
 

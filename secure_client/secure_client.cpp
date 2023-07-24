@@ -163,6 +163,7 @@ int main(int argc, char *argv[]) {
 /* requested.                                        */
 //********************************************************************
     printf("\n\n<<<TCP (CROSS-PLATFORM, IPv6-ready) CLIENT, by nhreyes>>>\n");
+    printf("\n\n<<<Encryption and Decryption by Jamie Douglas>>>\n");
 
     if (LOBYTE(wsadata.wVersion) != 2 || HIBYTE(wsadata.wVersion) != 2) {
         printf("Could not find a usable version of Winsock.dll\n");
